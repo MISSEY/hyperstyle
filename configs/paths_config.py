@@ -36,6 +36,7 @@ model_paths = {
 	'faces_w_encoder': 'pretrained_models/faces_w_encoder.pt',
 	'cars_w_encoder': 'pretrained_models/cars_w_encoder.pt',
 	'afhq_wild_w_encoder': 'pretrained_models/afhq_wild_w_encoder.pt',
+	'e4e_w_encoder': 'pretrained_models/faces_w_encoder.pt',
 	# models for domain adaptation
 	'restyle_e4e_ffhq': 'pretrained_models/restyle_e4e_ffhq_encode.pt',
 	'stylegan_pixar': 'pretrained_models/pixar.pt',
