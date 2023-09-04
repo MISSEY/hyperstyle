@@ -5,6 +5,7 @@ import copy
 from argparse import Namespace
 
 from models.encoders.psp import pSp
+from models.encoders.e4e import e4e
 from models.stylegan2.model import Generator
 from configs.paths_config import model_paths
 from models.hypernetworks.hypernetwork import SharedWeightsHyperNetResNet, SharedWeightsHyperNetResNetSeparable
@@ -138,11 +139,19 @@ class HyperStyle(nn.Module):
     def __get_pretrained_w_encoder(self):
         print("Loading pretrained W encoder...")
         opts_w_encoder = vars(copy.deepcopy(self.opts))
-        opts_w_encoder['checkpoint_path'] = self.opts.w_encoder_checkpoint_path
-        opts_w_encoder['encoder_type'] = self.opts.w_encoder_type
-        opts_w_encoder['input_nc'] = 3
-        opts_w_encoder = Namespace(**opts_w_encoder)
-        w_net = pSp(opts_w_encoder)
+        # e4e
+        if 'ProgressiveBackboneEncoder' in self.opts.w_encoder_type:
+            opts_w_encoder['checkpoint_path'] = self.opts.w_encoder_checkpoint_path
+            opts_w_encoder['encoder_type'] = self.opts.w_encoder_type
+            opts_w_encoder['input_nc'] = 6
+            opts_w_encoder = Namespace(**opts_w_encoder)
+            w_net = e4e(opts_w_encoder)
+        else:
+            opts_w_encoder['checkpoint_path'] = self.opts.w_encoder_checkpoint_path
+            opts_w_encoder['encoder_type'] = self.opts.w_encoder_type
+            opts_w_encoder['input_nc'] = 3
+            opts_w_encoder = Namespace(**opts_w_encoder)
+            w_net = pSp(opts_w_encoder)
         w_net = w_net.encoder
         w_net.eval()
         w_net.cuda()
