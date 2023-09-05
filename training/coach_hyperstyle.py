@@ -76,6 +76,7 @@ class Coach:
         self.best_val_loss = None
         if self.opts.save_interval is None:
             self.opts.save_interval = self.opts.max_steps
+        self.__load_average_image()
 
     def parse_batch(self, batch):
         x, y, y_hat, latents = None, None, None, None
@@ -100,6 +101,8 @@ class Coach:
                 weights_deltas = [w.clone().detach().requires_grad_(True) if w is not None else w
                                   for w in weights_deltas]
                 y_hat = y_hat.clone().detach().requires_grad_(True)
+
+
             y_hat, latent, weights_deltas, codes, w_inversion = self.net.forward(x,
                                                                                  y_hat=y_hat,
                                                                                  codes=codes,
@@ -107,7 +110,8 @@ class Coach:
                                                                                  return_latents=True,
                                                                                  randomize_noise=False,
                                                                                  return_weight_deltas_and_codes=True,
-                                                                                 resize=True)
+                                                                                 resize=True,
+                                                                                 average_image=self.average_image)
             if iter == 0:
                 initial_inversion = w_inversion
             if "cars" in self.opts.dataset_type:
@@ -124,6 +128,12 @@ class Coach:
             for idx in range(x.shape[0]):
                 y_hats[idx].append([y_hat[idx].detach().cpu(), id_logs[idx]['diff_target']])
         return x, y, y_hats, cur_loss_dict, id_logs, initial_inversion
+
+    def __load_average_image(self):
+        self.average_image = None
+        if 'ProgressiveBackboneEncoder' in self.opts.w_encoder_type:
+            self.average_image = self.net(self.net.latent_avg.unsqueeze(0), input_code=True, randomize_noise=False,
+                                              return_latents=False)
 
     def train(self):
         self.net.train()

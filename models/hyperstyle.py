@@ -60,19 +60,32 @@ class HyperStyle(nn.Module):
             self.__load_latent_avg(ckpt, repeat=self.n_styles)
             if self.opts.load_w_encoder:
                 self.w_encoder = self.__get_pretrained_w_encoder()
-
+                
+    # def _avg_image(self):
+    #     path = os.path.join(self.logger.log_dir,'average_image.png')
+    #     PIL.Image.fromarray((self.average_img.permute(0, 2, 3, 1) * 127.5 + 128).clamp(0, 255).to(torch.uint8)[0].cpu().numpy(), 'RGB').save(path)
+    
     def forward(self, x, resize=True, input_code=False, randomize_noise=True, return_latents=False,
-                return_weight_deltas_and_codes=False, weights_deltas=None, y_hat=None, codes=None):
+                return_weight_deltas_and_codes=False, weights_deltas=None, y_hat=None, codes=None,average_image=None):
+
 
         if input_code:
             codes = x
         else:
             if y_hat is None:
                 assert self.opts.load_w_encoder, "Cannot infer latent code when e4e isn't loaded."
-                y_hat, codes = self.__get_initial_inversion(x, resize=True)
+                if average_image is not None:
+                    avg_image_for_batch = average_image.repeat(x.shape[0], 1, 1, 1)
+                    x_input = torch.cat([x, avg_image_for_batch], dim=1)
+                else:
+                    x_input = x.detach().clone()
+                y_hat, codes = self.__get_initial_inversion(x_input, resize=True)
 
             # concatenate original input with w-reconstruction or current reconstruction
             x_input = torch.cat([x, y_hat], dim=1)
+            
+                
+                
 
             # pass through hypernet to get per-layer deltas
             hypernet_outputs = self.hypernet(x_input)
@@ -103,6 +116,9 @@ class HyperStyle(nn.Module):
 
     def set_opts(self, opts):
         self.opts = opts
+
+    
+        
 
     def __load_latent_avg(self, ckpt, repeat=None):
         if 'latent_avg' in ckpt:
